@@ -1,0 +1,266 @@
+# Реализация DHCPv4 
+## Часть 1. Создание сети и настройка основных параметров устройства.
+### Шаг 1. Создание схемы адресации  
+R1:  
+G0/0/1.100 192.168.1.1 255.255.255.192  
+G0/0/1.200 192.168.1.65 255.255.255.224  
+R2:  
+G0/0/1 192.168.1.97 255.255.255.240  
+S1:  
+VLAN 200 192.168.1.66 255.255.255.224, шлюз 192.168.1.65  
+S2  
+VLAN 1 192.168.1.98 255.255.255.240, шлюз 192.168.1.97  
+
+### Шаг 2. Создание сети согласно топологии. 
+![1](1.png)  
+## Шаг 3. Настройка базовых параметров для маршрутизаторов.
+В режиме глобальной конфигурации устанавливаем следующие базовые параметры:    
+no ip domain-lookup  
+hostname R1  
+  
+R1(config)# enable secret class  
+    
+R1(config)# line console 0   
+R1(config-line)# password cisco   
+R1(config-line)# login  
+  
+R1(config)# line vty 0 15   
+R1(config-line)# password cisco   
+R1(config-line)# login  
+  
+R1(config)# service password-encryption    
+  
+R1(config)# banner motd #Authorized access only#     
+  
+R1#copy running-config startup-config  
+  
+R1#clock set 13:20:20 15 may 2022    
+  
+hostname R1    
+
+R2(config)# enable secret class  
+    
+R2(config)# line console 0   
+R2(config-line)# password cisco   
+R2(config-line)# login  
+  
+R2(config)# line vty 0 15   
+R2(config-line)# password cisco   
+R1(config-line)# login  
+  
+R2(config)# service password-encryption    
+  
+R2(config)# banner motd #Authorized access only#     
+  
+R2#copy running-config startup-config
+  
+R2#clock set 13:23:23 15 may 2022    
+## Шаг 4. Настройка маршрутизации между сетями VLAN на маршрутизаторе R1.
+R1(config)#int g0/1  
+R1(config-if)#no sh  
+  
+R1(config)#interface g0/1.100  
+R1(config-subif)#Description Getawey for Clients  
+R1(config-subif)#encapsulation dot1Q 100  
+R1(config-subif)#ip address 192.168.1.1 255.255.255.192  
+  
+R1(config)#interface g0/1.200  
+R1(config-subif)#Description Getawey for Management  
+R1(config-subif)#encapsulation dot1Q 200  
+R1(config-subif)#ip address 192.168.1.65 255.255.255.224  
+  
+R1(config)#interface g0/1.1000  
+R1(config-subif)#Description Getawey for Native  
+R1(config-subif)#encapsulation dot1Q 1000  
+![2](2.png)  
+## Шаг 5. Настройка G0/1 на R2, затем G0/0 и статической маршрутизации для обоих маршрутизаторов
+R2(config)#int g0/1  
+R2(config-if)#ip add 192.168.1.97 255.255.255.240  
+R2(config-if)#no sh  
+  
+R2(config)#int g0/0  
+R2(config-if)#ip add 10.0.0.2 255.255.255.252  
+R2(config-if)#no sh    
+  
+R2(config)#ip route 0.0.0.0 0.0.0.0 10.0.0.1  
+  
+R1(config)#int g0/0  
+R1(config-if)#no ip add 10.0.0.1 255.255.255.252  
+R1(config-if)#no sh  
+  
+R1(config)#ip route 0.0.0.0 0.0.0.0 10.0.0.2  
+![3](3.png)  
+![4](4.png)  
+## Шаг 6. Настройка базовых параметров каждого коммутатора.
+no ip domain-lookup  
+hostname S1  
+
+S1(config)# enable secret class  
+    
+S1(config)# line console 0   
+S1(config-line)# password cisco   
+S1(config-line)# login  
+  
+S1(config)# line vty 0 15   
+S1(config-line)# password cisco   
+S1(config-line)# login  
+  
+S1(config)# service password-encryption    
+  
+S1(config)# banner motd #Authorized Access Only#     
+  
+S1#copy running-config startup-config  
+  
+S1#clock set 14:45:45 15 may 2022    
+  
+no ip domain-lookup  
+hostname S2  
+
+S2(config)# enable secret class  
+    
+S2(config)# line console 0   
+S2(config-line)# password cisco   
+S2(config-line)# login  
+  
+S2(config)# line vty 0 15   
+S2(config-line)# password cisco   
+S2(config-line)# login  
+  
+S2(config)# service password-encryption    
+  
+S2(config)# banner motd #Authorized Access Only#     
+  
+S2#copy running-config startup-config  
+  
+S2#clock set 14:47:48 15 may 2022    
+  
+## Шаг 7. Создайте сетей VLAN на коммутаторе S1.
+S1(config)#vlan 100  
+S1(config-vlan)# name Clients  
+S1(config-vlan)#vlan 200  
+S1(config-vlan)#name Management  
+S1(config-vlan)#vlan 999  
+S1(config-vlan)#name Parking_Lot  
+  
+S1(config)#int vlan 200  
+S1(config-if)#ip address 192.168.1.66 255.255.255.224  
+  
+S1(config)#ip default-gateway 192.168.1.65  
+  
+S1(config)#int f0/6  
+S1(config-if)#switchport mode access   
+S1(config-if)#switchport access vlan 100    
+  
+S1(config)#int range f0/1-4, f0/7-24, g0/1-2  
+S1(config-if-range)#switchport mode access   
+S1(config-if-range)#sw access vlan 999  
+S1(config-if-range)#shutdown   
+  
+## Шаг 8. Назначение сети VLAN соответствующим интерфейсам коммутатора S2.
+S2(config)#int f0/18  
+S2(config-if)#switchport mode access   
+S2(config-if)#switchport access vlan 1
+S2(config)#int vlan 1  
+S2(config-if)#ip address 192.168.1.98 255.255.255.240  
+  
+S2(config)#ip default-gateway 192.168.1.97  
+![5](5.png)  
+Интерфейс F0/5 указан в VLAN 1, т.е. по умолчанию все интерфейсы включены в VLAN 1.
+## Шаг 9. Настройка интерфейса S1 F0/5 в качестве транка 802.1Q.
+S1(config)#int f0/5
+S1(config-if)#switchport trunk native vlan 1000
+S1(config-if)#switchport trunk allowed vlan 100,200,1000  
+  
+
+"Какой IP-адрес был бы у ПК, если бы он был подключен к сети с помощью DHCP?" - при подключении к порту g0/1 маршрутизатора компьютер адрес не получит, т.к. данные порт не настроен.  
+
+![6](6.png)  
+## Часть 2. Настройка и проверка двух серверов DHCPv4 на R1.
+## Шаг 1. Настройка R1 с пулами DHCPv4 для двух поддерживаемых подсетей.
+а. Исключите первые пять используемых адресов из каждого пула адресов.  
+Пул адресов Подсети A: 192.168.1.1 - 192.168.1.62. После исключения 5 первых адресов получаем пул: 192.168.1.6 - 192.168.1.62  
+Пул адресов Подсети С: 192.168.1.97 - 192.168.1.110. После исключение 5 первых адресов пул: 192.168.1.102 - 192.168.1.110  
+  
+R1(config)#ip dhcp excluded-address 192.168.1.1 192.168.1.5  
+R1(config)#ip dhcp pool CLIENTS_POOL  
+R1(dhcp-config)#network 192.168.1.0 255.255.255.192  
+R1(dhcp-config)#domain-name CCNA-lab.com  
+R1(dhcp-config)#default-router 192.168.1.1  
+  
+R1(config)#ip dhcp excluded-address 192.168.1.97 192.168.1.101  
+R1(config)#ip dhcp pool R2_Client_LAN  
+R1(dhcp-config)#network 192.168.1.96 255.255.255.240  
+R1(dhcp-config)#domain-name CCNA-lab.com  
+R1(dhcp-config)#default-router 192.168.1.97  
+  
+## Шаг 3. Проверка конфигурации сервера DHCPv4
+Немного экспериментов с исключенными.  
+![7](7.png)  
+## Часть 3. Настройка и проверка DHCP-ретрансляции на R2.
+## Шаг 1. Настройка R2 в качестве агента DHCP-ретрансляции для локальной сети на G0/0/1.
+![8](8.png)  
+## Шаг 2. Попытка получить IP-адрес от DHCP на PC-B.
+![9](9.png)    
+  
+  
+# Настройка DHCPv6 
+Создание сети и настройка основных параметров устройства
+## Часть 1. Создание сети и настройка основных параметров устройства.
+S1#erase startup-config  
+S1#delete vlan.dat  
+S2#erase startup-config  
+S2#delete vlan.dat  
+  
+### d. Настройка интерфейсов и маршрутизации для обоих маршрутизаторов.
+R1(config)#ipv6 unicast-routing   
+R2(config)#ipv6 unicast-routing   
+  
+R1(config)#int g0/0  
+R1(config-if)#ipv6 address 2001:db8:acad:2::1/64  
+R1(config-if)#ipv6 address fe80::1 link-local   
+  
+R1(config)#int g0/1  
+R1(config-if)#ipv6 address 2001:db8:acad:1::1/64  
+R1(config-if)#ipv6 address fe80::1 link-local  
+  
+R2(config)#int g0/0  
+R2(config-if)#ipv6 address 2001:db8:acad:2::2/64  
+R2(config-if)#ipv6 address fe80::2 link-local   
+  
+R2(config)#int g0/1  
+R2(config-if)#ipv6 address 2001:db8:acad:3::1/64  
+R2(config-if)#ipv6 address fe80::1 link-local  
+  
+R1(config)#ipv6 route ::/0 2001:db8:acad:2::2  
+R2(config)#ipv6 route ::/0 2001:db8:acad:2::1   
+  
+R1#ping 2001:db8:acad:3::1  
+  
+Type escape sequence to abort.  
+Sending 5, 100-byte ICMP Echos to 2001:db8:acad:3::1, timeout is 2 seconds:  
+!!!!!  
+Success rate is 100 percent (5/5), round-trip min/avg/max = 0/0/0 ms  
+  
+## Часть 2. Проверка назначения адреса SLAAC от R1.
+## Часть 3. Настройка и проверка сервера DHCPv6 на R1.
+![10](10.png)    
+### Настройка R1 для предоставления DHCPv6 без сохранения состояния для PC-A.
+R1(config)#ipv6 dhcp pool R1-STATELESS  
+R1(config-dhcpv6)#dns-server 2001:db8:acad::254  
+R1(config-dhcpv6)#domain-name STATELESS.com  
+R1(config-dhcpv6)#interface g0/1  
+R1(config-if)#ipv6 nd other-config-flag   
+R1(config-if)#ipv6 dhcp server R1-STATELESS  
+![11](11.png)    
+## Часть 4. Настройка сервера DHCPv6 с сохранением состояния на R1.
+R1(config)#ipv6 dhcp pool R2-STATEFUL  
+R1(config-dhcpv6)#address prefix 2001:db8:acad:3:aaa::/80  
+R1(config-dhcpv6)#dns-server 2001:db8:acad::254  
+R1(config-dhcpv6)#domain-name STATEFUL.com  
+R1(config-dhcpv6)#int g0/0  
+R1(config-if)#ipv6 dhcp server R2-STATEFUL  
+## Часть 5. Настройка и проверка ретрансляции DHCPv6 на R2.
+![12](12.png)    
+## Настройка R2 в качестве агента DHCP-ретрансляции для локальной сети на G0/1.
+![13](13.png)    
+К сожалению, не получается настроить и проверить ретрансляцию.
