@@ -204,7 +204,7 @@ R1(config-ext-nacl)#int g0/1.30
 R1(config-subif)#ip access-group POLITIC4 in  
 ### Проверка политик безопасности
 ![11](11.png)  
-![12](12.png)
+![12](12.png)  
 PC-B SSH 10.20.0.4 Сбой  
 PC-B SSH 172.16.1.1 Успех  
 Результат соответсвует заданию.  
