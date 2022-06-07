@@ -188,8 +188,7 @@ R1(config-ext-nacl)#remark Deny SSH Management for Sales & Deny ICMP for Sales t
 R1(config-ext-nacl)#deny tcp 10.40.0.0 0.0.0.255 10.20.0.0 0.0.0.255 eq 22  
 R1(config-ext-nacl)#deny icmp 10.40.0.0 0.0.0.255 10.20.0.0 0.0.0.255 echo  
 R1(config-ext-nacl)#deny icmp 10.40.0.0 0.0.0.255 10.30.0.0 0.0.0.255 echo  
-R1(config-ext-nacl)#permit tcp any any  
-R1(config-ext-nacl)#permit icmp any any  
+R1(config-ext-nacl)#permit ip any any  
 R1(config)#int g0/1.40  
 R1(config-subif)#ip access-group POLITIC1 in  
 ### Политика 4: Cеть Operations  не может отправлять ICMP эхозапросы в сеть Sales. Разрешены эхо-запросы ICMP к другим адресатам.
@@ -199,7 +198,7 @@ R1(config-ext-nacl)#deny icmp 10.40.0.0 0.0.0.255 10.30.0.0 0.0.0.255 echo-reply
 R1(config)#ip access-list extended POLITIC4  
 R1(config-ext-nacl)#remark Deny ICMP for Operations to Sales  
 R1(config-ext-nacl)#deny icmp 10.30.0.0 0.0.0.255 10.40.0.0 0.0.0.255 echo  
-R1(config-ext-nacl)#permit icmp any any  
+R1(config-ext-nacl)#permit ip any any  
 R1(config-ext-nacl)#int g0/1.30  
 R1(config-subif)#ip access-group POLITIC4 in  
 ### Проверка политик безопасности
